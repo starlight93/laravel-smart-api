@@ -1,6 +1,6 @@
 {
     "name": "starlight93/laravel-smart-api",
-    "description": "API Generator",
+    "description": "Restful API Generator",
     "type": "library",
     "license": "MIT",
     "autoload": {
@@ -25,10 +25,15 @@
         "jfcherng/php-diff": "^6.15",
         "tymon/jwt-auth": "^2.0",
         "rap2hpoutre/laravel-log-viewer": "^2.3",
-        "laravel/socialite": "^5.9"
-    },
-    "require-dev": {
+        "laravel/socialite": "^5.9",
         "kitloong/laravel-migrations-generator": "^6.11"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Starlight93\\LaravelSmartApi\\ApiServiceProvider"
+            ]
+        }
     },
     "minimum-stability": "dev",
     "prefer-stable": true
