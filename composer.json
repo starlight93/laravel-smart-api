@@ -28,6 +28,6 @@
         "laravel/socialite": "^5.9"
     },
     "require-dev": {
-        "kitloong/laravel-migrations-generator": "^6.10"
+        "kitloong/laravel-migrations-generator": "^6.11"
     }
 }
