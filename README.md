@@ -101,7 +101,7 @@ Dengan membuat file migration, atau struktur DB yang ada maka akan mendapatkan f
 - [x] Zero Config JWT Auth
 - [x] Zero Controller
 - [x] Zero Config routing
-- [v] Zero Config Schedulers
+- [x] Zero Config Schedulers
 - [ ] Multi .env file sesuai sub domain atau port
 - [ ] Banyak helper yang sangat sering digunakan di project seperti export pdf,excel hingga direct printing
 
