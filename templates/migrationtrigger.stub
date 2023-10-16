@@ -1,0 +1,41 @@
+<?php
+
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Migrations\Migration;
+use App\Helpers\PLSQL as PLSQL;
+use App\Helpers\DBS as DBS;
+
+return new class extends Migration
+{
+    public function up()
+    {  
+        
+        $variables =[
+          '_variable1'    => 'integer' //CONTOH DEKLARASI VARIABLE
+        ];
+        // DBS::invoke_table('table')->invoke_delete("id = NEW.id"); //CONTOH TRIGGER DELETE
+        // DBS::invoke_table('table')->invoke_insert(["column"=>"values"]); //CONTOH TRIGGER INSERT
+        $command=DBS::command(
+            [
+                // DBS::table('api_models')->selectRaw("column INTO _variable1")->whereRaw("id=1")->limit(1), // CONTOH INISIASI ke VARIABLE
+                "IF _exist=0 THEN ",
+                    DBS::invoke_table('api_models')->invoke_where("id = NEW.id")->invoke_update([
+                        "column" => "values"
+                    ]),
+                "END IF;"
+            ])->create();
+        
+        PLSQL::table('__table__')
+                ->__time__('__action__')
+                ->declare($variables)
+                ->script($command)
+                ->create();
+    }
+    public function down()
+    {
+        PLSQL::table("__table__")
+                ->__time__('__action__')
+                ->drop();
+    }
+};

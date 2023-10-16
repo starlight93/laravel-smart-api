@@ -1,0 +1,18 @@
+<?php
+
+namespace __namespace;
+
+class __class extends __basicClass
+{    
+    public function __construct()
+    {
+        parent::__construct();
+    }
+    
+    public $fileColumns    = [ /*file_column*/ ];
+
+    //public $createAdditionalData = ["creator_id"=>"auth:id"];
+    //public $updateAdditionalData = ["last_editor_id"=>"auth:id"];
+
+    
+}

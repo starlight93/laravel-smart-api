@@ -1,0 +1,33 @@
+{
+    "name": "starlight93/laravel-smart-api",
+    "description": "API Generator",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Starlight93\\LaravelSmartApi\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "authors": [
+        {
+            "name": "starlight93",
+            "email": "mail.firmansyah93@gmail.com"
+        }
+    ],
+    "require": {
+        "staudenmeir/laravel-cte": "^1.7",
+        "doctrine/dbal": "^3.6",
+        "jfcherng/php-diff": "^6.15",
+        "tymon/jwt-auth": "^2.0",
+        "rap2hpoutre/laravel-log-viewer": "^2.3",
+        "laravel/socialite": "^5.9"
+    },
+    "require-dev": {
+        "kitloong/laravel-migrations-generator": "^6.10"
+    }
+}

@@ -1,0 +1,16 @@
+<?php
+
+namespace App\Models\CustomModels;
+
+class __model
+{
+    public created
+    $mymodel = (new App\Models\CustomModels\__model);
+    public function __construct()
+    {
+        //kode program
+    }
+    public function customfunction($variable){
+        //kode program
+    }
+}

@@ -1,0 +1,19 @@
+<?php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up()
+    {
+        $sql = \DB::table("default_users")
+                ->selectRaw("id,email,name")
+                ->toSql();
+		\DB::unprepared("CREATE OR REPLACE VIEW __table__ AS $sql;");
+    }
+    public function down()
+    {
+		\DB::unprepared("DROP VIEW IF EXISTS __table__;");
+    }
+};

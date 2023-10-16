@@ -1,0 +1,36 @@
+<?php
+namespace Tests;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Tymon\JWTAuth\Facades\JWTAuth;
+
+class ___class___Test extends TestCase
+{
+    use DatabaseTransactions;
+
+    private function getToken(){
+        $user = (new \User)->first();
+        return 'Bearer '.JWTAuth::fromUser($user);
+    }
+
+    public function testReadingData()
+    {
+        $this->withHeader('Authorization', $this->getToken());
+        $payload = [
+            'paginate' => 25
+        ];
+
+        $response = $this->get('/__prefix__/__table__',$payload);
+        // \Ed::ff($response->json());
+        $response->assertStatus(200);
+    }
+
+    public function testCreatingData()
+    {
+        $this->withHeader('Authorization', $this->getToken());
+        $payload = __payload__;
+
+        $response = $this->post('/__prefix__/__table__', $payload);
+        // \Ed::ff($response->json());
+        $response->assertStatus(200);
+    }
+}
