@@ -29,5 +29,7 @@
     },
     "require-dev": {
         "kitloong/laravel-migrations-generator": "^6.11"
-    }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
 }
