@@ -5,7 +5,6 @@ namespace Starlight93\LaravelSmartApi\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
 use App\Http\Controllers\Controller;

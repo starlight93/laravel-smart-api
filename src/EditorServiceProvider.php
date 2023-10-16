@@ -2,7 +2,6 @@
 
 namespace Starlight93\LaravelSmartApi;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\Route;
 use Starlight93\LaravelSmartApi\Helpers\ApiFunc as Api;
 
 class EditorServiceProvider extends ServiceProvider{

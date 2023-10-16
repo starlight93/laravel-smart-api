@@ -3,7 +3,6 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Jfcherng\Diff\Factory\RendererFactory;
-use Illuminate\Support\Facades\File;
 use Rap2hpoutre\LaravelLogViewer\LogViewerController;
 
 Route::get('/', function(){

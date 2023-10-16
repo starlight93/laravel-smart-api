@@ -44,7 +44,7 @@ Fitur:
  - Masuk ke root project yang baru dibuat
  - Install package dengan composer:
  ```sh
-    composer require --dev starlight93/laravel-smart-api
+    composer require starlight93/laravel-smart-api
 ```
  - Daftarkan Provider Editor dan API Generator
 - Laravel: buka file config/app.php, tambahkan di bagian key: `providers`
@@ -84,6 +84,11 @@ Fitur:
 | API_ROUTE_PREFIX | Prefix Endpoint route untuk restful API [Usage](config/api.php?plain=1#6)| api |
 | API_USER_TABLE | Default User's table name [Usage](config/api.php?plain=1#4)| users |
 | API_PROVIDER | Register Provider Class Name Tambahan, contoh "\\App\\Your\\Class" [Usage](config/api.php?plain=1#7)| - |
+
+ - Setelah melakukan pengaturan di .env file, usahakan setting database connection telah benar, maka aplikasi akan mampu melakukan create models (di /app/Models/CustomModels) secara otomatis sesuai isi table di database (reverse engineering). Lakukan command CLI berikut:
+ ```sh
+    php artisan project:model
+ ```
 
 ## Rest API Generator
 Dengan membuat file migration, atau struktur DB yang ada maka akan mendapatkan fitur lengkap berikut:

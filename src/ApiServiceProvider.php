@@ -13,7 +13,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Stringable;
 use Carbon\Carbon;
-use Starlight93\LaravelSmartApi\Helpers\EditorFunc as Ed;
 
 class ApiServiceProvider extends ServiceProvider{
     /**
@@ -66,8 +65,6 @@ class ApiServiceProvider extends ServiceProvider{
                 $this->app->withFacades();
                 $this->app->withEloquent();
             }
-
-            $request = app('request');
             
             $this->app->configure('auth');
             $this->app->configure('services');
