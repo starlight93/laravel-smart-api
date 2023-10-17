@@ -21,7 +21,10 @@ class UserController extends Controller
             'password' => 'required|string'
         ]);
         
-        if ($validator->fails()) return response()->json($validator->errors(),401);
+        if ($validator->fails()) return response()->json([
+            'message' => 'unauthenticated',
+            'errors' => $validator->errors()
+        ], 401);
         
         try{
             if( !($token = auth()->attempt( $credentials )) ) throw new \Exception();
@@ -37,7 +40,7 @@ class UserController extends Controller
                 }
             }
         }catch(\Exception $err){
-            return response()->json(['message'=>'unauthorized'],401);
+            return response()->json(['message'=>'unauthenticated'],401);
         }
 
         return response()->json([
