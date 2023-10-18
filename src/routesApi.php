@@ -13,6 +13,7 @@ Route::group([
     ], function () {
         Route::get('/logout', "UserController@logout");
         Route::get('/user', "UserController@user");
+        Route::post('/unlock-screen', "UserController@unlockScreen");
         Route::post('/change-password', "UserController@changePassword");
         Route::post('/upload', function(Request $req){
             if( !$req->hasFile('file') ) abort(422, '`file` payload must exist');
