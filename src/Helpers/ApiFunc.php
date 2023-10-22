@@ -990,23 +990,7 @@ class ApiFunc {
     }
     public static function reformatDataResponse( array $arrayData ): array
     {
-        $dataKey=["date","tgl","tanggal","_at","etd","eta"];
-        $dateFormat = env("FORMAT_DATE_FRONTEND","d/m/Y");
-        foreach($arrayData as $key=>$data){
-            $isDate=false;
-            foreach($dataKey as $dateString){
-                if(strpos(strtolower($key),$dateString)!==false && count(explode("-",$data))>2){
-                    $isDate=true;
-                    break;
-                }
-            }
-            if($isDate){
-                try{
-                    $newData = Carbon::createFromFormat("Y-m-d", $data)->format($dateFormat);
-                    $arrayData[$key] = $newData;
-                }catch(\Exception $e){}
-            }
-        }
+        // deprecated, please override $this->casts in Model
         return $arrayData;
     }
     
