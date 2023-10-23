@@ -244,7 +244,7 @@ class ApiServiceProvider extends ServiceProvider{
                 if( !Schema::hasTable('default_schedules') ) return;
                 $tasks = DB::table('default_schedules')->where('status','ACTIVE')->get();
             }catch(\Exception $e){
-                return trigger_error($e->getMessage());
+                return app()->runningInConsole() ? null: trigger_error($e->getMessage());
             }
             foreach($tasks as $task){
                 $daysArr = $task->days ? json_decode($task->days, true):[0, 1, 2, 3, 4, 5, 6];
