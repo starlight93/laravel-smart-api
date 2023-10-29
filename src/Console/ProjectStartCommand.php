@@ -66,7 +66,7 @@ class ProjectStartCommand extends Command
             $this->info("Default Env Keys are generated successfully");
 
             Artisan::call('storage:link');
-
+            Artisan::call('jwt:secret');
 
         }catch(\Exception $err){
             $this->error($dir. "-". $err->getMessage());
