@@ -726,7 +726,7 @@ class ApiController extends Controller
                         $now = Carbon::now()->format('his');
                         $fixedPath = "$modelName/$now-$keyName-{$fileName}";
                         $fixedFullPath = storage_path( "app/public/$fixedPath" );
-                        File::put( $fixedFullPath, $req->$keyName );
+                        File::put( $fixedFullPath, File::get( $req->$keyName->getRealPath() ) );
                         $finalData[$keyName] = $fixedPath;
                     }
                 }
@@ -881,7 +881,7 @@ class ApiController extends Controller
             $oldArr = config( 'files_to_remove' );
             foreach( $model->fileColumns as $col ){
                 if( $preparedModel->$col ){
-                    $oldArr[] =  $preparedModel->$col;
+                    $oldArr[] =  $preparedModel->getRawOriginal($col);
                 }
             }
             config([ 'files_to_remove' => $oldArr ]);
@@ -962,6 +962,7 @@ class ApiController extends Controller
         $finalData  = $updateBeforeEvent["data"];
         if($this->isMultipart){
             $req = $this->originalRequest;
+            $oldArrToRemoves = config( 'files_to_remove' );
             foreach( array_keys($req->all()) as $keyName){
                 if($req->hasFile($keyName) && in_array($keyName, array_keys($finalData)) ){
                     $validator = Validator::make($req->all(), [
@@ -984,10 +985,12 @@ class ApiController extends Controller
                     $now = Carbon::now()->format('his');
                     $fixedPath = "$modelName/$now-$keyName-{$fileName}";
                     $fixedFullPath = storage_path( "app/public/$fixedPath" );
-                    File::put( $fixedFullPath, $req->$keyName );
+                    File::put( $fixedFullPath, File::get( $req->$keyName->getRealPath() ) );
                     $finalData[$keyName] = $fixedPath;
+                    $oldArrToRemoves[] = $preparedModel->getRawOriginal($keyName);
                 }
             }
+            config([ 'files_to_remove' => $oldArrToRemoves ]);
         }
 
         $finalData  = Api::reformatData($finalData,$preparedModel);
