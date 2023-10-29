@@ -300,7 +300,7 @@ class ApiController extends Controller
                 }elseif( in_array($typeData,["date","datetime","timestamp"]  )){
                     $fieldValidator = (in_array($payload,$requiredFields)?"required":"nullable").'|date_multi_format:"Y-m-d H:i:s","Y-m-d G:i:s","Y-m-d H:i","Y-m-d G:i","Y-m-d","d/m/Y"' ;
                 }elseif( in_array($typeData,["text","string"]  )){
-                    $fieldValidator = (in_array($payload,$requiredFields)?"required":"nullable").($length?"|max:$length":"")."|string" ;
+                    $fieldValidator = (in_array($payload,$requiredFields)?"required":"nullable").( $this->isMultipart && in_array($payload,$model->fileColumns)?'' : (($length?"|max:$length":"")."|string") );
                 }
                 if($fieldValidator){
                     if( $operation!=='create' ){
@@ -716,13 +716,18 @@ class ApiController extends Controller
                                 "errors"=>$validator->errors(),
                                 "resource"=>$modelName
                             ]));
-                        }                    
-                        $code= Carbon::now()->format('his');
-                        $fileName = sanitizeString($req->$keyName->getClientOriginalName());
-                        Storage::disk('uploads')->putFileAs(
-                            $modelName, $req->$keyName, $code."_".$fileName
-                        );
-                        $finalData[$keyName] = url("/uploads/$modelName/".$code."_".$fileName);
+                        }
+
+                        $fileName = Api::sanitizeString($req->$keyName->getClientOriginalName());
+                        if(!File::exists(storage_path( "app/public/$modelName" ))){
+                            umask(0000);
+                            File::makeDirectory( storage_path( "app/public/$modelName" ), 493, true);
+                        }
+                        $now = Carbon::now()->format('his');
+                        $fixedPath = "$modelName/$now-$keyName-{$fileName}";
+                        $fixedFullPath = storage_path( "app/public/$fixedPath" );
+                        File::put( $fixedFullPath, $req->$keyName );
+                        $finalData[$keyName] = $fixedPath;
                     }
                 }
             }
@@ -969,13 +974,18 @@ class ApiController extends Controller
                             "errors"=>$validator->errors(),
                             "resource"=>$modelName
                         ]));
-                    }                    
-                    $code= Carbon::now()->format('his');
-                    $fileName = sanitizeString($req->$keyName->getClientOriginalName());
-                    Storage::disk('uploads')->putFileAs(
-                        $modelName, $req->$keyName, $code."_".$fileName
-                    );
-                    $finalData[$keyName] = url("/uploads/$modelName/".$code."_".$fileName);
+                    }
+
+                    $fileName = Api::sanitizeString($req->$keyName->getClientOriginalName());
+                    if(!File::exists(storage_path( "app/public/$modelName" ))){
+                        umask(0000);
+                        File::makeDirectory( storage_path( "app/public/$modelName" ), 493, true);
+                    }
+                    $now = Carbon::now()->format('his');
+                    $fixedPath = "$modelName/$now-$keyName-{$fileName}";
+                    $fixedFullPath = storage_path( "app/public/$fixedPath" );
+                    File::put( $fixedFullPath, $req->$keyName );
+                    $finalData[$keyName] = $fixedPath;
                 }
             }
         }
