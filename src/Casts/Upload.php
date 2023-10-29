@@ -17,6 +17,10 @@ class Upload implements CastsAttributes
 
     public function set($model, $key, $value, $attributes)
     {
+        if(Str::contains(app()->request->header("Content-Type"),"multipart")){
+            return $value;    
+        }
+        
         $oldValue = $model->getRawOriginal($key);
         $custom = \Api::getCustom( \Api::getTableOnly( $model->getTable() ) );
         if( count($custom->fileColumns)>0 && in_array($key, $custom->fileColumns) ){
