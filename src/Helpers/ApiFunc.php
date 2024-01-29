@@ -179,53 +179,21 @@ class ApiFunc {
                     continue;
                 }
 
-                if(getApiVersion()!=2){
-                    if( !isset($kembar[$parent]) ){
-                        $kembar[$parent] = 1;
-                    }else{
-                        $kembar[$parent] = $kembar[$parent]+1;
-                    }
-                }
-
-                $parentName = $fullParent;
-                if(getApiVersion()!=2 && $kembar[$parent]>1){
-                    $parentName = "$fullParent AS ".$parent.(string)$kembar[$parent];
-                    // $onParent = str_replace($parent,"tes".$parent.(string)$kembar[$parent],$onParent); //OLD CODE
-                    $onParentArray=explode(".",$onParent);
-                    if( count( $onParentArray )>2 ){
-                        $onParent = $onParentArray[1].".".$onParentArray[2];
-                    }
-                    $onParent = str_replace($parent,$parent.(string)$kembar[$parent],$onParent);
-                }
-
-                if(getApiVersion()==2){
-                    $parentName = "$fullParent AS $aliasParent";
-                    $onParent = str_replace($fullParent,$aliasParent,$onParent);
-                }
+                $parentName = "$fullParent AS $aliasParent";
+                $onParent = str_replace($fullParent,$aliasParent,$onParent);
 
                 $model = $model->leftJoin($parentName, $onParent, "=", $onMe);
                 $parentClass = new $parentClassString;
                 $parentClass->asParent = true;
-                if( getApiVersion() !=2 && $kembar[$parent]>1 ){
-                    $parentName = $parent.(string)$kembar[$parent];
-                }
                 foreach($parentClass->getColumns() as $column){
-                    if( getApiVersion()==2 ){
-                        $colTemp = Str::contains(strtolower($column), ' as ') ? $column : "$aliasParent.$column AS ".'"'.$aliasParent.".".$column.'"';
-                    }else{
-                        $colTemp = Str::contains(strtolower($column), ' as ') ? $column : "$parentName.$column AS ".'"'.$parentName.".".$column.'"';
-                    }
+                    $colTemp = Str::contains(strtolower($column), ' as ') ? $column : "$aliasParent.$column AS ".'"'.$aliasParent.".".$column.'"';
 
                     $fieldSelected[]= $colTemp;
                     $allColumns[]   = "$parentName.$column";
                 }
                 
                 if($joinMax>0){
-                    if(getApiVersion()==2){
-                        _joinRecursiveAlias($joinMax,$kembar,$fieldSelected,$allColumns,$joined,$model,$parent,$params);
-                    }else{
-                        _joinRecursive($joinMax,$kembar,$fieldSelected,$allColumns,$joined,$model,$parent,$params);
-                    }
+                    _joinRecursiveAlias($joinMax,$kembar,$fieldSelected,$allColumns,$joined,$model,$parent,$params);
                 }
             }
         }
