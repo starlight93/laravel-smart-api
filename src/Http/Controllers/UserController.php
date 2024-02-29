@@ -11,7 +11,6 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 use Starlight93\LaravelSmartApi\Helpers\ApiFunc as Api;
 use Validator;
-use Exception;
 
 class UserController extends Controller
 {

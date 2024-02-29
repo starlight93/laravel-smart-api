@@ -4,7 +4,7 @@ namespace Starlight93\LaravelSmartApi\Helpers;
 
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schema;
@@ -27,13 +27,15 @@ class Logger
         if( $type=='HttpException' || config('app.debug') || env('APP_DEBUG') || Str::contains(app()->request->fullUrl(),'laradev')){
             return;
         }
-        self::activate();
+        if( !(self::activate()) ){
+            return;
+        }
 
         $insertedLogId = DB::table('default_error_logs')->insertGetId( $data = [
             'url' => app()->request->fullUrl(),
-            'url_frontend'=> app()->request->header('URLORIGIN'), // belum tentu ada jika dari selain frontend vue
-            'user_ip'=> app()->request->ip(), // belum tentu ada jika dari selain frontend vue
-            'modul' => self::getFrontendModul(), // belum tentu ada jika dari selain frontend vue
+            'url_frontend'=> app()->request->header('URLORIGIN'),
+            'user_ip'=> app()->request->ip(),
+            'modul' => self::getFrontendModul(),
             'username' => \Auth::check()?\Auth::user()->username:null,
             'payload' => json_encode(app()->request->all()),
             'exception_code' => $err->getCode(),
@@ -119,15 +121,17 @@ class Logger
     private static function activate(){
         $key = "default_error_logs_is_migrated";
         
-        if( \Cache::get( $key ) ){
-            return;
-        }elseif( !Schema::hasTable('default_error_logs') ){
+        if( Cache::has( $key ) ){
+            return true;
+        }elseif( !Schema::hasTable('default_error_logs') && File::exists( base_path("database/migrations/__defaults/0_0_0_0_default_error_logs.php") ) ){
             Artisan::call( "migrate:refresh", [
                 "--path"=>"database/migrations/__defaults/0_0_0_0_default_error_logs.php" , "--force" => true
             ]);
+            Cache::forever( $key, 1 );
+        }else{
+            return false;
         }
         
-        \Cache::forever( $key, 1 );
-        return;
+        return true;
     }
 }

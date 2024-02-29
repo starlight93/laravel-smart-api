@@ -2,16 +2,11 @@
 
 namespace Starlight93\LaravelSmartApi\Helpers;
 
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
-use Jfcherng\Diff\DiffHelper;
 use Illuminate\Support\Facades\Mail;
 use Starlight93\LaravelSmartApi\Mails\SendMailable;
-use Starlight93\LaravelSmartApi\Helpers\EditorFunc as Ed;
 use Carbon\Carbon;
 
 class ApiFunc {

@@ -4,8 +4,6 @@ namespace Starlight93\LaravelSmartApi\Console;
 
 use Exception;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\DB;
 
 class BackupCommand extends Command
 {

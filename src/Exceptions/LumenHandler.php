@@ -7,10 +7,8 @@ use Illuminate\Validation\ValidationException;
 use Laravel\Lumen\Exceptions\Handler as ExceptionHandler;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Illuminate\Support\Str;
-use Illuminate\Support\Arr;
 use illuminate\Support\Facades\DB;
 use Throwable;
-use Illuminate\Http\Response;
 use Starlight93\LaravelSmartApi\Helpers\Logger;
 use Starlight93\LaravelSmartApi\Helpers\ApiFunc as Api;
 
