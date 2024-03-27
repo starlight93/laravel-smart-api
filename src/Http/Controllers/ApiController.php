@@ -135,7 +135,7 @@ class ApiController extends Controller
     }
     private function serializeMultipartData(){
         foreach( $this->requestData as $key=>$value ){
-            if( is_numeric($value) ){
+            if( is_numeric($value) || app()->request->hasFile($key) ){
                 continue;
             }
             $triedJSON = json_decode( $value, true);
