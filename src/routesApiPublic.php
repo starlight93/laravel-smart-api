@@ -35,4 +35,4 @@ Route::post('/{modelname}/{function}', function(Request $req,$modelname,$functio
     }
     $result = $model->$function($req);
     return $result;
-})->middleware('web');
+});
