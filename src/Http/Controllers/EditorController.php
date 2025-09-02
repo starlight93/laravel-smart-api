@@ -642,12 +642,12 @@ class EditorController extends Controller
 
     public function createModels(Request $request, $tableName=null) {
         $this->hasMany = "
-    public function __child() :\HasMany
+    public function __child()
     {
         return \$this->hasMany('$this->prefixNamespace\__child', '__cld_column', '__parent_column');
     }";
         $this->belongsTo ="
-    public function __relatedColumn() :\BelongsTo
+    public function __relatedColumn()
     {
         return \$this->belongsTo('$this->prefixNamespace\__parent', '__child_column', '__prt_column');
     }";
