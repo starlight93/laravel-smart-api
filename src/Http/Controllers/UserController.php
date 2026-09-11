@@ -26,9 +26,9 @@ class UserController extends Controller
         ], 401);
         
         try{
-            if( !($token = auth()->attempt( $credentials )) ) throw new \Exception();
+            if( !($issued = Api::issueToken( $credentials )) ) throw new \Exception();
+            [$token, $user] = $issued;
             $email_verified = env('EMAIL_VERIFIED', false);
-            $user = auth()->user();
             if( ($userActiveLogic = config('api.user_active_when')) ){
                 $userActiveLogicArr = explode(":", $userActiveLogic );
                 $column = $userActiveLogicArr[0];
@@ -45,14 +45,14 @@ class UserController extends Controller
         return response()->json([
             'access_token' => $token,
             'token_type' => 'bearer',
-            'expires_in_mins' => config('jwt.ttl'),
+            'expires_in_mins' => Api::tokenTtlMinutes(),
             'data'=> $user
         ]);
     }
 
     public function logout(Request $request)
     {
-        auth()->logout(true);;
+        Api::revokeToken();
         return response()->json([
             'message' => 'Successfully logged out'
         ]);
@@ -60,7 +60,7 @@ class UserController extends Controller
 
     public function user(Request $request)
     {
-        $currentUser = auth()->user();
+        $currentUser = Api::guard()->user();
         // $expiration = Carbon::createFromTimestamp(auth()->payload()->get('exp'))->format('i');
         // $currentUser->expires_in_hours = $expiration;
         if( env("API_RESPONSE_FINALIZER") ){
@@ -80,7 +80,7 @@ class UserController extends Controller
 
         if ($validator->fails()) return response()->json($validator->errors(),422);
 
-        $currentUser = auth()->user();
+        $currentUser = Api::guard()->user();
         
         if ( Hash::check($request->current_password, $currentUser->password) ) {
             $currentUser->update([
@@ -99,7 +99,7 @@ class UserController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string',
-            'email' => 'required|string|email|unique:default_users',
+            'email' => 'required|string|email|unique:'.config('api.user_table'),
             'password' => 'required|string|confirmed'
         ]);
         if ($validator->fails()) {
@@ -143,7 +143,7 @@ class UserController extends Controller
             return response()->json($validator->errors(),422);
         }
         
-        $user = User::find(Auth::user()->id);
+        $user = Api::guard()->user();
         $password = $request->password;
 
         if (Hash::check( base64_decode($request->password) , $user->password)) {

@@ -89,9 +89,9 @@ class EditorController extends Controller
                 }
                 $conn = $this->getConnection($connection);
                 $dbname = $conn->getDatabaseName();
-                $conn=$conn->getDoctrineSchemaManager();
+                $conn=Ed::schemaManager($conn);
             }else{
-                $conn=DB::getDoctrineSchemaManager();
+                $conn=Ed::schemaManager();
                 $dbname = DB::getDatabaseName();
             }
         } catch (Exception $e) {
@@ -107,10 +107,10 @@ class EditorController extends Controller
             if($connection!=null){
                 $dbname = $connection['database'];
                 $conn = $this->getConnection($connection);
-                $conn=$conn->getDoctrineSchemaManager();
+                $conn=Ed::schemaManager($conn);
             }else{
                 $dbname = env("DB_DATABASE","");
-                $conn=DB::getDoctrineSchemaManager();
+                $conn=Ed::schemaManager();
             }
         } catch (Exception $e) {
             try {
@@ -134,7 +134,7 @@ class EditorController extends Controller
                     }
                     $conn = $this->getConnection($default);
                 }
-                $conn=$conn->getDoctrineSchemaManager();
+                $conn=Ed::serverSchemaManager($conn);
                 $conn->createDatabase($dbname);
                 return response()->json("database $dbname created successfully");
             }catch(Exception $e2){
@@ -185,8 +185,7 @@ class EditorController extends Controller
     private function getFullTables($toModel=false,$tableKhusus=null)
     {
         try{
-            $schemaManager = DB::getDoctrineSchemaManager();
-            $schemaManager->getDatabasePlatform()->registerDoctrineTypeMapping('enum', 'string');
+            $schemaManager = Ed::schemaManager();
             $data = $schemaManager->listTableNames();
             $tables = [];
             $fks = [];
@@ -380,19 +379,19 @@ class EditorController extends Controller
     }
 
     public function readDatabases(Request $request){
-        $databases = DB::getDoctrineSchemaManager()->listDatabases();
+        $databases = Ed::serverSchemaManager()->listDatabases();
         return $databases;
     }
 
     public function createDatabase(Request $request)
     {
-        DB::getDoctrineSchemaManager()->createDatabase($request->name);
+        Ed::serverSchemaManager()->createDatabase($request->name);
         return "create database OK";
     }
 
     public function deleteDatabase(Request $request, $databaseName)
     {
-        DB::getDoctrineSchemaManager()->dropDatabase($databaseName);
+        Ed::serverSchemaManager()->dropDatabase($databaseName);
         return "delete database OK";
     }
 
@@ -404,8 +403,7 @@ class EditorController extends Controller
         if($request->has('details') ){
             return $this->getFullTables();
         }
-        $schemaManager = DB::getDoctrineSchemaManager();
-        $schemaManager->getDatabasePlatform()->registerDoctrineTypeMapping('enum', 'string');
+        $schemaManager = Ed::schemaManager();
         $tables = $schemaManager->listTableNames();
         $tableNames = [];
         foreach ($tables as $table) {
@@ -964,8 +962,7 @@ class EditorController extends Controller
                 return File::get( $migrationPath );
             }else{
                 $data = $this->getDirContents( base_path('database/migrations/projects') );
-                $schemaManager = DB::getDoctrineSchemaManager();
-                $schemaManager->getDatabasePlatform()->registerDoctrineTypeMapping('enum', 'string');
+                $schemaManager = Ed::schemaManager();
                 $tables = $schemaManager->listTableNames();
                 $arrayTables = []; $arrayViews = [];
                 $fk = 0;
@@ -1466,7 +1463,7 @@ class EditorController extends Controller
         return response()->json("pembuatan file migration OK");
     }
 
-    public function getCoreFile(Request $req, string $filename = null ){
+    public function getCoreFile(Request $req, ?string $filename = null ){
         if( $filename ){
             $path = base_path("app/Cores/$filename.php");
             return File::get( $path );
@@ -1488,7 +1485,7 @@ class EditorController extends Controller
         return response()->json("core file was delete");
     }
 
-    public function getJsFile(Request $req, string $filename = null ){
+    public function getJsFile(Request $req, ?string $filename = null ){
         if( $filename ){
             $path = resource_path("js/projects/$filename.js");
             return File::get( $path );
@@ -1513,7 +1510,7 @@ class EditorController extends Controller
         return response()->json("js file was delete");
     }
 
-    public function getBladeFile(Request $req, string $filename = null ){
+    public function getBladeFile(Request $req, ?string $filename = null ){
         if( $filename ){
             $path = base_path("resources/views/projects/$filename.blade.php");
             return File::get( $path );

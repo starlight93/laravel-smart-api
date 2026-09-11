@@ -87,9 +87,9 @@ class EditorServiceProvider extends ServiceProvider{
     }
 
     protected function overrideConfigs(){
-        $defaultCorsPaths = config("colrs.paths");
+        $defaultCorsPaths = config("cors.paths", []);
         $defaultCorsPaths[] = "*/*";
-        config(["cors.paths"=> $defaultCorsPaths ]);
+        config(["cors.paths"=> array_values(array_unique($defaultCorsPaths)) ]);
 
         // override default migrator config
         config(["migrations-generator.migration_target_path" => base_path('database/migrations/projects') ]);

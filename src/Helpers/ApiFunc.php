@@ -983,6 +983,98 @@ class ApiFunc {
         return !(app() instanceof \Illuminate\Foundation\Application);
     }
 
+    /** jwt | sanctum | passport */
+    public static function authDriver() :string
+    {
+        return strtolower( config('api.auth.driver', 'jwt') ?: 'jwt' );
+    }
+
+    /** Nama guard yang dipakai package; kosong di config = turunkan dari driver. */
+    public static function authGuard() :string
+    {
+        if( ($guard = config('api.auth.guard')) ) return $guard;
+        return self::authDriver() === 'sanctum' ? 'sanctum' : 'api';
+    }
+
+    /** Guard instance package (pengganti pemanggilan auth() telanjang). */
+    public static function guard()
+    {
+        return auth()->guard( self::authGuard() );
+    }
+
+    /** Timpa config auth host? Default: hanya saat driver jwt. */
+    public static function overridesAuthConfig() :bool
+    {
+        $flag = config('api.auth.override_config');
+        if( $flag === null || $flag === '' ) return self::authDriver() === 'jwt';
+        return filter_var($flag, FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
+     * Verifikasi credentials lewat user provider guard aktif, lalu terbitkan token
+     * sesuai driver. Return [token, user] atau null bila gagal.
+     *
+     * ponytail: sanctum/passport pakai createToken() tanpa scope/ability.
+     * Butuh scope per-token? kirim lewat provider aplikasi (API_PROVIDER).
+     */
+    public static function issueToken(array $credentials) :?array
+    {
+        $driver = self::authDriver();
+
+        if( $driver === 'jwt' ){
+            $guard = self::guard();
+            if( !($token = $guard->attempt($credentials)) ) return null;
+            return [$token, $guard->user()];
+        }
+
+        $providerName = config('auth.guards.'.self::authGuard().'.provider') ?: config('auth.defaults.provider', 'users');
+        $provider     = \Illuminate\Support\Facades\Auth::createUserProvider($providerName);
+        if( !$provider ) return null;
+
+        $user = $provider->retrieveByCredentials($credentials);
+        if( !$user || !$provider->validateCredentials($user, $credentials) ) return null;
+
+        if( !method_exists($user, 'createToken') ){
+            throw new \RuntimeException(
+                'Model '.get_class($user).' harus memakai trait HasApiTokens untuk driver '.$driver.'.'
+            );
+        }
+
+        $token = $user->createToken( config('api.auth.token_name', 'api') );
+
+        return [ $driver === 'sanctum' ? $token->plainTextToken : $token->accessToken, $user ];
+    }
+
+    /** Cabut token aktif sesuai driver. */
+    public static function revokeToken() :void
+    {
+        $guard = self::guard();
+
+        if( self::authDriver() === 'jwt' ){
+            $guard->logout(true);
+            return;
+        }
+
+        $user = $guard->user();
+        if( !$user ) return;
+
+        if( method_exists($user, 'currentAccessToken') && ($token = $user->currentAccessToken()) ){
+            method_exists($token, 'revoke') ? $token->revoke() : $token->delete();
+        }elseif( method_exists($user, 'token') && ($token = $user->token()) ){
+            $token->revoke();
+        }
+    }
+
+    /** TTL token dalam menit (null bila driver tidak punya konsep TTL). */
+    public static function tokenTtlMinutes()
+    {
+        return match( self::authDriver() ){
+            'jwt'     => config('jwt.ttl'),
+            'sanctum' => config('sanctum.expiration'),
+            default   => null,
+        };
+    }
+
     
     public static function isJson($args) {
         json_decode($args);

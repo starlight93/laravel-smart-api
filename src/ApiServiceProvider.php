@@ -68,7 +68,9 @@ class ApiServiceProvider extends ServiceProvider{
             
             $this->app->configure('auth');
             $this->app->configure('services');
-            $this->app->register(\Tymon\JWTAuth\Providers\LumenServiceProvider::class);
+            if( Api::authDriver() === 'jwt' ){
+                $this->app->register(\Tymon\JWTAuth\Providers\LumenServiceProvider::class);
+            }
             $this->app->register(\App\Providers\AuthServiceProvider::class);
             $this->app->register(\Rap2hpoutre\LaravelLogViewer\LaravelLogViewerServiceProvider::class);
 
@@ -89,12 +91,13 @@ class ApiServiceProvider extends ServiceProvider{
             $this->app->routeMiddleware([
                 'auth' => \App\Http\Middleware\Authenticate::class
             ]);
-        }else{
-            config(['sanctum'=>[]]);
+        }elseif( Api::authDriver() === 'jwt' ){
+            // Stub config sanctum hanya bila sanctum memang tidak terpasang;
+            // kalau host memakai sanctum (install:api), config-nya jangan dikosongkan.
+            if( !class_exists(\Laravel\Sanctum\Sanctum::class) ) config(['sanctum'=>[]]);
             $this->app->register(\Tymon\JWTAuth\Providers\LaravelServiceProvider::class);
         }
         $this->app->register(\Starlight93\LaravelSmartApi\EditorServiceProvider::class);
-        $this->app->register(\Laravel\Socialite\SocialiteServiceProvider::class);
 
         
         if( config('api.provider') && class_exists(config('api.provider')) ){
@@ -138,13 +141,6 @@ class ApiServiceProvider extends ServiceProvider{
             require __DIR__.'/routesApi.php';
         });
 
-        // Socialite
-        $this->app->router->group([
-            'namespace' => $namespace,
-        ], function () {
-            require __DIR__.'/routesSocialite.php';
-        });
-
         // Restful API Public public_ function
         $this->app->router->group([
             'namespace' => $namespace,
@@ -168,30 +164,31 @@ class ApiServiceProvider extends ServiceProvider{
         if(!class_exists('Carbon')){
             class_alias(\Carbon\Carbon::class, 'Carbon');
         }
-        if(!class_exists('Socialite')){
-            class_alias(\Laravel\Socialite\Facades\Socialite::class, 'Socialite');
-        }
 
     }
 
     protected function overrideConfigs(){
-        config(["auth.providers"=> [
-            'users' => [
-                'driver' => 'eloquent',
-                'model' => \Starlight93\LaravelSmartApi\Models\User::class,
-            ],
-        ] ]);
+        // Saat driver sanctum/passport, config auth milik aplikasi host dibiarkan utuh
+        // sehingga model User, guard, dan provider aplikasi yang dipakai.
+        if( Api::overridesAuthConfig() ){
+            config(["auth.providers"=> [
+                'users' => [
+                    'driver' => 'eloquent',
+                    'model' => \Starlight93\LaravelSmartApi\Models\User::class,
+                ],
+            ] ]);
 
-        config(["auth.guards"=> [
-            'api' => [
-                'driver' => 'jwt',
-                'provider' => 'users',
-            ],
-            'web' => [
-                'driver' => 'session',
-                'provider' => 'users',
-            ],
-        ] ]);
+            config(["auth.guards"=> [
+                'api' => [
+                    'driver' => Api::authDriver() === 'jwt' ? 'jwt' : Api::authDriver(),
+                    'provider' => 'users',
+                ],
+                'web' => [
+                    'driver' => 'session',
+                    'provider' => 'users',
+                ],
+            ] ]);
+        }
 
         
         config(["logging.channels.stack"=> [
@@ -207,7 +204,7 @@ class ApiServiceProvider extends ServiceProvider{
             'redirect'      => url('/auth/callback/google')
         ]]);
 
-        if(!Api::isLumen()){
+        if(!Api::isLumen() && Api::overridesAuthConfig()){
             config(["auth.defaults"=> [
                 'guard' => 'api',
                 'passwords' => 'users',

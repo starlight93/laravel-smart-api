@@ -35,14 +35,17 @@ class EnvKeyCommand extends Command
             "EDITOR_FRONTENDERS=",
             "EDITOR_BACKENDERS=",
             "EDITOR_OWNERS=dev-owner",
-            "GOOGLE_CLIENT_ID=",
-            "GOOGLE_CLIENT_SECRET=",
             "LOG_SENDER=",
             "LOG_PATH=".uniqid(),
             "CLIENT_CHANNEL=",
             "API_ROUTE_PREFIX=api",
             "API_USER_TABLE=default_users",
             "API_PROVIDER=",
+
+            "# jwt | sanctum | passport\nAPI_AUTH_DRIVER=jwt",
+            "# kosong = auto (jwt/passport -> api, sanctum -> sanctum)\nAPI_AUTH_GUARD=",
+            "# kosong = override auth config hanya saat driver jwt\nAPI_AUTH_OVERRIDE_CONFIG=",
+            "API_AUTH_TOKEN_NAME=api",
             "JWT_TTL=43800",
             "AUTOCREATE_MIGRATION=true",
 
@@ -57,9 +60,11 @@ class EnvKeyCommand extends Command
 
         $content = file_get_contents($path);
         foreach($data as $keyVal){
-            $keyArr = explode('=', $keyVal);
-            if ( !Str::contains($content, $keyArr[0]) ) {
-                file_put_contents($path, PHP_EOL."$keyVal", FILE_APPEND);
+            // Entri boleh multiline (baris '#' komentar + baris key=value di akhir).
+            $lines = explode("\n", $keyVal);
+            $key   = explode('=', end($lines))[0];
+            if ( !Str::contains($content, $key) ) {
+                file_put_contents($path, PHP_EOL.$keyVal, FILE_APPEND);
             }
         }
     }

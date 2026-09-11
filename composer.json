@@ -16,17 +16,28 @@
     "authors": [
         {
             "name": "starlight93",
-            "email": "mail.firmansyah93@gmail.com"
+            "email": "mail.firmansyah93@gmail.com",
+            "role": "Author"
+        },
+        {
+            "name": "Claude (Anthropic)",
+            "homepage": "https://claude.com/claude-code",
+            "role": "Contributor"
         }
     ],
     "require": {
-        "staudenmeir/laravel-cte": "^1.7",
+        "php": "^8.2",
+        "illuminate/support": "^11.0|^12.0|^13.0",
+        "staudenmeir/laravel-cte": "^1.13",
         "doctrine/dbal": "^3.6",
         "jfcherng/php-diff": "^6.15",
-        "tymon/jwt-auth": "^2.0",
-        "rap2hpoutre/laravel-log-viewer": "^2.3",
-        "laravel/socialite": "^5.9",
-        "kitloong/laravel-migrations-generator": "^6.11"
+        "tymon/jwt-auth": "^2.2",
+        "rap2hpoutre/laravel-log-viewer": "^3.1",
+        "kitloong/laravel-migrations-generator": "^7.4"
+    },
+    "suggest": {
+        "laravel/sanctum": "Set API_AUTH_DRIVER=sanctum untuk memakai guard sanctum aplikasi host",
+        "laravel/passport": "Set API_AUTH_DRIVER=passport untuk memakai guard passport aplikasi host"
     },
     "extra": {
         "laravel": {

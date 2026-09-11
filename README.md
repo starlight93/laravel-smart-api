@@ -1,6 +1,6 @@
 # Laravel/Lumen Online Editor & Rest API Generator
 ## Online Editor
-Fitur editing project laravel atau lumen secara online dengan protocol HTTP(s) dengan editor online: https://ngopi.netlify.app atau https://ngopi.vercel.app secara aman dan sangat cepat.
+Fitur editing project laravel atau lumen secara online dengan protocol HTTP(s) dengan editor online: https://ngopi.netlify.app
 
 
 ## Background
@@ -39,6 +39,16 @@ Fitur:
 - [x] Fitur uploader data copy paste dari excel dan query-able sebelum diupload
 - [x] Aman dan dapat dimatikan fitur editor ini jika project sudah running tanpa perlu editing lagi
 
+## Kompatibilitas
+
+| Package | Laravel | Lumen | PHP |
+| --- | --- | --- | --- |
+| `^2.0` | 11.x, 12.x, 13.x | 11.x | >= 8.2 |
+| `^1.0` | <= 10.x | <= 10.x | >= 7.4 |
+
+Mulai `2.0` package memakai `EditorFunc::schemaManager()` sebagai pengganti
+`DB::getDoctrineSchemaManager()` yang dihapus Laravel 11. Lihat [CHANGELOG.md](CHANGELOG.md).
+
 ## Instalasi:
  - Create laravel project baru seperti di  [Tutorial Official](https://laravel.com/docs/master/installation#your-first-laravel-project)
  - Masuk ke root project yang baru dibuat
@@ -46,15 +56,115 @@ Fitur:
  ```sh
     composer require starlight93/laravel-smart-api
 ```
- - Daftarkan Provider Editor dan API Generator
-- Laravel: buka file config/app.php, tambahkan di bagian key: `providers`
- `Starlight93\LaravelSmartApi\ApiServiceProvider::class`
+ - Provider terdaftar otomatis lewat package auto-discovery (`extra.laravel.providers`).
+   Tidak perlu edit `config/app.php` maupun `bootstrap/providers.php`.
+   Kalau auto-discovery dimatikan (`extra.laravel.dont-discover`), daftarkan manual di `bootstrap/providers.php`:
+```php
+   return [
+       App\Providers\AppServiceProvider::class,
+       Starlight93\LaravelSmartApi\ApiServiceProvider::class,
+   ];
+```
 
 - Lumen: buka file bootstrap/app.php tambahkan baris berikut:
 ```php
    $app->register(Starlight93\LaravelSmartApi\ApiServiceProvider::class);
 ```
    Untuk lumen tak perlu mengaktifkan withFacades() dan withEloquent() karena akan auto dinyalakan oleh provider generator
+
+ - Generate secret JWT (hanya bila `API_AUTH_DRIVER=jwt`, yaitu default):
+```sh
+   php artisan vendor:publish --provider="Tymon\JWTAuth\Providers\LaravelServiceProvider"
+   php artisan jwt:secret
+```
+
+## Auth Driver: JWT bawaan atau ikut aplikasi host
+
+Endpoint package diproteksi satu middleware saja:
+[`AuthenticateApi`](src/Http/Middleware/AuthenticateApi.php) — driver-agnostic, setara
+`auth:<guard>` bawaan Laravel plus `auth()->shouldUse()` agar `Auth::user()` di
+`ApiController`/`Logger`/`Cryptor` menunjuk user yang sama.
+
+| `API_AUTH_DRIVER` | Guard dipakai | Token diterbitkan | Config `auth` host |
+| --- | --- | --- | --- |
+| `jwt` (default) | `api` (driver jwt, model User package) | `JWTGuard::attempt()` | ditimpa package |
+| `sanctum` | `sanctum` (guard aplikasi) | `$user->createToken()->plainTextToken` | dibiarkan utuh |
+| `passport` | `api` (guard aplikasi, driver passport) | `$user->createToken()->accessToken` | dibiarkan utuh |
+
+```env
+# jwt | sanctum | passport
+API_AUTH_DRIVER=jwt
+# kosong = auto (jwt/passport -> api, sanctum -> sanctum)
+API_AUTH_GUARD=
+# kosong = override auth config hanya saat driver jwt
+API_AUTH_OVERRIDE_CONFIG=
+API_AUTH_TOKEN_NAME=api
+```
+
+Logika driver ada di [`ApiFunc`](src/Helpers/ApiFunc.php): `authDriver()`, `authGuard()`,
+`guard()`, `issueToken()`, `revokeToken()`, `tokenTtlMinutes()`. `UserController@login` /
+`@logout` memakai helper itu, jadi endpoint tidak berubah antar driver.
+
+### Pindah ke Sanctum (auth bawaan aplikasi)
+```sh
+php artisan install:api      # pasang laravel/sanctum + routes/api.php + migration
+php artisan migrate          # tabel personal_access_tokens
+```
+```php
+// app/Models/User.php
+use Laravel\Sanctum\HasApiTokens;
+class User extends Authenticatable
+{
+    use HasFactory, Notifiable, HasApiTokens;   // wajib, kalau tidak issueToken() lempar RuntimeException
+```
+```env
+API_AUTH_DRIVER=sanctum
+API_USER_TABLE=users          # samakan tabel model package dengan provider auth aplikasi
+```
+Model yang dipakai adalah `config('auth.providers.users.model')` milik aplikasi. Kalau ingin
+guard sanctum tetap membaca tabel package, set `AUTH_MODEL=Starlight93\LaravelSmartApi\Models\User`
+alih-alih mengubah `API_USER_TABLE`.
+
+Guard `sanctum` tidak perlu ditulis di `config/auth.php` — `SanctumServiceProvider::register()`
+sudah menyuntik `auth.guards.sanctum` (provider `null` → fallback `auth.defaults.provider`).
+
+### Pindah ke Passport
+```sh
+composer require laravel/passport
+php artisan migrate && php artisan passport:keys
+```
+```php
+// config/auth.php — untuk passport WAJIB ditulis manual
+'api' => ['driver' => 'passport', 'provider' => 'users'],
+```
+```env
+API_AUTH_DRIVER=passport
+```
+
+### Berbarengan dengan `php artisan install:api`
+`install:api` mendaftarkan `routes/api.php` dengan prefix `api`, sementara package memakai
+`api/{modelname}` (wildcard). Route aplikasi terdaftar lebih dulu, jadi mis. `GET /api/user`
+akan menutupi model bernama `user`. Solusi: kosongkan `routes/api.php`, atau set
+`API_ROUTE_PREFIX=data`.
+
+### Yang di-override package ini pada aplikasi host
+Provider menimpa beberapa config runtime. Ketahui sebelum integrasi ke project yang sudah jalan:
+
+| Config | Nilai yang dipaksa |
+| --- | --- |
+| `auth.defaults` | guard `api` (driver `jwt`) — **hanya saat `API_AUTH_OVERRIDE_CONFIG` aktif** |
+| `auth.providers.users.model` | `Starlight93\LaravelSmartApi\Models\User` (tabel dari `API_USER_TABLE`) — idem |
+| `auth.guards` | hanya `api` dan `web` (session) — idem |
+| `logging.channels.stack` | channel stack milik package |
+| `cors.paths` | `cors.paths` aplikasi + `*/*` |
+| `migrations-generator.*` | target path `database/migrations/projects` + pola nama `0_0_0_0_[name].php` |
+
+Default `API_AUTH_OVERRIDE_CONFIG` kosong = override **hanya** saat driver `jwt`. Dengan
+`sanctum`/`passport` seluruh `auth.*` aplikasi dibiarkan apa adanya. Untuk memaksa perilaku
+lain isi `true`/`false` secara eksplisit.
+
+Catatan: sejak versi ini package **tidak lagi** membawa `laravel/socialite`; `services.google`,
+rute `/login/{driver}`, dan `SocialiteMiddleware` sudah dihapus.
 
 ## Start Project:
  - Matikan tracking file permission di git ROOT Project (jika project anda sudah di `git init` sebelumnya)
@@ -65,6 +175,22 @@ Fitur:
  ```sh
     php artisan project:start
  ```
+   Command akan bertanya: *"Pakai auth bawaan aplikasi (sanctum/passport)? Jawab no untuk JWT
+   bawaan package."* Lewati pertanyaan dengan flag: `php artisan project:start --auth=sanctum`.
+
+#### `project:start` aman dijalankan berkali-kali
+| Langkah | Efek pada run ulang |
+| --- | --- |
+| chmod/mkdir direktori editable | chmod 777 ulang, isi tidak disentuh |
+| `project:model` | regenerate `GeneratedModels/` dari skema DB (`app/Models/CustomModels` tidak ditimpa) |
+| `project:env` | append-only, key yang sudah ada di `.env` dilewati (nilainya tidak diubah) |
+| `API_AUTH_DRIVER` | ditulis **hanya** bila `--auth=` diberikan atau key belum ada di `.env` |
+| `jwt:secret` | hanya saat driver `jwt` dan `JWT_SECRET` masih kosong |
+| `storage:link` | dilewati bila symlink sudah ada |
+| `--migrate` | **destruktif**: `migrate:refresh` DROP + buat ulang tabel default. Minta konfirmasi; `--no-interaction` = dilewati |
+
+Tanpa flag apa pun, command hanya melakukan chmod + generate model + append env. Tidak ada
+tabel maupun nilai `.env` yang berubah.
 
  ## Environment Variable
  Lihat vendor/starlight93/config/ untuk lebih lengkapnya. Variable di bawah dapat dipasang di .env folder project
@@ -76,14 +202,16 @@ Fitur:
 | EDITOR_FRONTENDERS | List user untuk developer frontend yang akan hanya mendapat akses blade dan js di editor online, misal: 001-dev-fe,002-dev-fe,dst cek [Middleware](src/Http/Middleware/EditorMiddleware.php?plain=1#L19) | - |
 | EDITOR_BACKENDERS | List user untuk developer backend yang akan hanya mendapat akses migration,model,dan bebarapa hal terkait Backend saja di editor online cek [Middleware](src/Http/Middleware/EditorMiddleware.php?plain=1#L20)| - |
 | EDITOR_OWNERS | List user untuk root dveloper yang akan dapat melihat semua fitur [Middleware](src/Http/Middleware/EditorMiddleware.php?plain=1#L21)| dev-owner |
-| GOOGLE_CLIENT_ID | Untuk keperluan config google auth (Laravel Socialite) [Usage](src/ApiServiceProvider.php?plain=1#L199)| - |
-| GOOGLE_CLIENT_SECRET | Untuk keperluan config google auth (Laravel Socialite) [Usage](src/ApiServiceProvider.php?plain=1#L200)| - |
 | LOG_SENDER | Untuk logging websocket [Usage](src/Helpers/EditorFunc.php?plain=1#207)| - |
 | LOG_PATH | Untuk path channel logging websocket [Usage](src/Helpers/EditorFunc.php?plain=1#205)| - |
 | CLIENT_CHANNEL | Untuk trigger send websocket ke listener lain seperti frontend misalnya [Usage](src/Helpers/EditorFunc.php?plain=1#205)| - |
 | API_ROUTE_PREFIX | Prefix Endpoint route untuk restful API [Usage](config/api.php?plain=1#6)| api |
 | API_USER_TABLE | Default User's table name [Usage](config/api.php?plain=1#4)| users |
-| API_PROVIDER | Register Provider Class Name Tambahan, contoh "\\App\\Your\\Class" [Usage](config/api.php?plain=1#7)| - |
+| API_PROVIDER | FQCN ServiceProvider aplikasi yang ikut diregistrasi setelah provider package (extension hook, bukan "user provider" `config/auth.php`), contoh `App\Providers\SmartApiProvider` [Usage](config/api.php?plain=1#7)| - |
+| API_AUTH_DRIVER | Driver token endpoint package: `jwt` \| `sanctum` \| `passport` [Usage](config/api.php?plain=1#L18)| jwt |
+| API_AUTH_GUARD | Guard untuk resolve user. Kosong = auto (jwt/passport → `api`, sanctum → `sanctum`) | - |
+| API_AUTH_OVERRIDE_CONFIG | Timpa `auth.*` aplikasi dengan milik package. Kosong = hanya saat driver `jwt` | - |
+| API_AUTH_TOKEN_NAME | Nama token yang dibuat saat login (sanctum/passport) | api |
 
  - Setelah melakukan pengaturan di .env file, usahakan setting database connection telah benar, maka aplikasi akan mampu melakukan create models (di /app/Models/CustomModels) secara otomatis sesuai isi table di database (reverse engineering). Lakukan command CLI berikut:
  ```sh
@@ -103,11 +231,15 @@ Dengan membuat file migration, atau struktur DB yang ada maka akan mendapatkan f
 - [x] Auto create mini API Documentation + Relasi sesuai DB (reverse Engineering)
 - [x] Error logging ke tabel dan notifikasi
 - [x] Dapat berjalan dengan pattern/koding di dalam project yang lain (tanpa generator)
-- [x] Zero Config JWT Auth
+- [x] Zero Config Auth: JWT bawaan, atau ikut Sanctum/Passport aplikasi via `API_AUTH_DRIVER`
 - [x] Zero Controller
 - [x] Zero Config routing
 - [x] Zero Config Schedulers
 - [ ] Multi .env file sesuai sub domain atau port
-- [ ] Banyak helper yang sangat sering digunakan di project seperti export pdf,excel hingga direct printing
 
+## Kontributor
 
+| Nama | Peran |
+| --- | --- |
+| [@starlight93](https://github.com/starlight93) | Author |
+| [Claude](https://claude.com/claude-code) (Anthropic) | Contributor — kompatibilitas Laravel 11/12/13, auth driver switchable (jwt/sanctum/passport) |

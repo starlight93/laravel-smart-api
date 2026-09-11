@@ -10,12 +10,95 @@ use Illuminate\Support\Str;
 use Jfcherng\Diff\DiffHelper;
 use Carbon\Carbon;
 use Starlight93\LaravelSmartApi\Helpers\ApiFunc as Api;
+use Illuminate\Support\Facades\DB;
+use Doctrine\DBAL\DriverManager;
 
 class EditorFunc {
 
     public static function __callStatic($method, $args): mixed
     {
         return (new static)->$method(...$args);
+    }
+
+    /**
+     * Laravel 11+ removed Connection::getDoctrineSchemaManager(); rebuild it from the
+     * Laravel connection config so the existing Doctrine-based introspection keeps working.
+     *
+     * ponytail: opens a second (lazy, cached) DBAL connection per Laravel connection instead of
+     * reusing the live PDO. Only used by the schema editor/generator, not request hot paths.
+     * Upgrade path: port callers to Schema::getTables()/getColumns() and drop doctrine/dbal.
+     */
+    private static array $schemaManagers = [];
+
+    public static function schemaManager($connection = null)
+    {
+        $connection = $connection ?: DB::connection();
+        $key = $connection->getName();
+        if (isset(self::$schemaManagers[$key])) {
+            return self::$schemaManagers[$key];
+        }
+
+        $config = $connection->getConfig();
+        $driver = $config['driver'] ?? 'mysql';
+        $doctrineDriver = [
+            'mysql'   => 'pdo_mysql',
+            'mariadb' => 'pdo_mysql',
+            'pgsql'   => 'pdo_pgsql',
+            'sqlsrv'  => 'pdo_sqlsrv',
+            'sqlite'  => 'pdo_sqlite',
+        ][$driver] ?? 'pdo_mysql';
+
+        $params = ['driver' => $doctrineDriver];
+        if ($doctrineDriver === 'pdo_sqlite') {
+            $params['path'] = $config['database'];
+        } else {
+            $params += array_filter([
+                'host'     => $config['host'] ?? null,
+                'port'     => $config['port'] ?? null,
+                'user'     => $config['username'] ?? null,
+                'password' => $config['password'] ?? null,
+                'dbname'   => $config['database'] ?? null,
+                'charset'  => $config['charset'] ?? null,
+            ], fn ($v) => $v !== null && $v !== '');
+        }
+
+        $dbal = DriverManager::getConnection($params);
+        $dbal->getDatabasePlatform()->registerDoctrineTypeMapping('enum', 'string');
+
+        return self::$schemaManagers[$key] = $dbal->createSchemaManager();
+    }
+
+    /** Doctrine connection without a database selected (for CREATE/DROP DATABASE). */
+    public static function serverSchemaManager($connection = null)
+    {
+        $connection = $connection ?: DB::connection();
+        $config = $connection->getConfig();
+        $driver = $config['driver'] ?? 'mysql';
+
+        if ($driver === 'pgsql') {
+            $config['database'] = 'postgres';
+        } else {
+            unset($config['database']);
+        }
+
+        $doctrineDriver = [
+            'mysql'   => 'pdo_mysql',
+            'mariadb' => 'pdo_mysql',
+            'pgsql'   => 'pdo_pgsql',
+            'sqlsrv'  => 'pdo_sqlsrv',
+            'sqlite'  => 'pdo_sqlite',
+        ][$driver] ?? 'pdo_mysql';
+
+        $params = array_filter([
+            'driver'   => $doctrineDriver,
+            'host'     => $config['host'] ?? null,
+            'port'     => $config['port'] ?? null,
+            'user'     => $config['username'] ?? null,
+            'password' => $config['password'] ?? null,
+            'dbname'   => $config['database'] ?? null,
+        ], fn ($v) => $v !== null && $v !== '');
+
+        return DriverManager::getConnection($params)->createSchemaManager();
     }
 
     public static function getDriver() : string // 'pgsql','mysql','sqlsever','sqlite'
