@@ -18,11 +18,6 @@
             "name": "starlight93",
             "email": "mail.firmansyah93@gmail.com",
             "role": "Author"
-        },
-        {
-            "name": "Claude (Anthropic)",
-            "homepage": "https://claude.com/claude-code",
-            "role": "Contributor"
         }
     ],
     "require": {
